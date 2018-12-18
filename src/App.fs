@@ -8,178 +8,99 @@ open Fable.Helpers.React.Props
 module Browser = Fable.Import.Browser
 
 // MODEL
+type SizeOption = string
 
-type Draft =
-    | NewDraft of string
-    | BumpedDraft of string * int
-    | RejectedDraft of string
+type MainDishOption = string
+
+type MeatOption = string
+
+type SideOrderOption = string
+
+type SchnitziOrder =
+    { Size : SizeOption option
+      MainDish : MainDishOption option
+      Meat : MeatOption option
+      SideOrder : SideOrderOption option }
 
 type Model =
-    { DraftForm : string
-      Drafts : Draft list }
+    { SelectedOptions : SchnitziOrder
+      SizeOptions : SizeOption list
+      MainDishOptions : MainDishOption list
+      MeatOptions : MeatOption list
+      SideOrderOptions : SideOrderOption list }
 
 type Msg =
-| UpdateDraftForm of string
-| CreateDraft
-| BumpDraft of string
-| RejectDraft of string
-(* _3_a_ define the UnbumpDraft message here. *)
+    | SelectSize of SizeOption
+    | SelectMainDish of MainDishOption
+    | SelectMeat of MeatOption
+    | SelectSideOrder of SideOrderOption
 
 let init() : Model =
-    { DraftForm = ""
-      Drafts = [] }
+    { SelectedOptions =
+          { Size = None
+            MainDish = None
+            Meat = None
+            SideOrder = None }
+      SizeOptions = [ "n/a"; "Klein"; "Mittel"; "Groß"; "XL" ]
+      MainDishOptions = [ "n/a"; "Schnitzel"; "Gemüsetaler"; "Gebackener Emmentaler" ]
+      MeatOptions = [ "n/a"; "Pute"; "Schwein" ]
+      SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges" ] }
 
 // UPDATE
-
-let bump (title : string) (d : Draft) =
-    match d with
-    | NewDraft t ->
-        if t = title then
-            sprintf "Draft %s has its first bump!" t
-            |> Browser.console.log
-            (BumpedDraft (t, 1))
-        else d
-    | BumpedDraft (t, b) ->
-        if t = title then
-            sprintf "Draft %s has now %d bumps!" t b
-            |> Browser.console.log
-            (BumpedDraft (t, b + 1))
-        else d
-    | RejectedDraft _ -> d
-
-let unbump (title : string) (d : Draft) =
-    match d with
-    | NewDraft _ -> d
-    | BumpedDraft (t, b) when b > 1 ->
-        if t = title then
-            (BumpedDraft (t, b - 1))
-        else d
-    | BumpedDraft (t, _) ->
-        NewDraft t
-    | RejectedDraft _ -> d
-
-let reject (title : string) (d : Draft) =
-    match d with
-    | NewDraft t ->
-        if t = title then (RejectedDraft t) else d
-    | BumpedDraft _ -> d
-    | RejectedDraft _ -> d
-
-let update (msg:Msg) (model:Model) =
+let update (msg : Msg) (model : Model) =
     match msg with
-    | UpdateDraftForm content ->
-        { model with DraftForm = content }
-    | CreateDraft ->
-        let newDraft = NewDraft model.DraftForm
-        { model with
-            DraftForm = ""
-            Drafts = newDraft::model.Drafts }
-    | BumpDraft title ->
-        let drafts =
-            model.Drafts
-            |> List.map (bump title)
-        { model with Drafts = drafts }
-    | RejectDraft title ->
-        let drafts = 
-            model.Drafts
-            |> List.map (reject title)
-        { model with Drafts = drafts }
-    (* _3_b_ Handle the UnbumpDraft message here - use the unbump method *)
+    | SelectSize size -> { model with SelectedOptions = { model.SelectedOptions with Size = Some size } }
+    | SelectMainDish mainDish -> 
+        { model with SelectedOptions = { model.SelectedOptions with MainDish = Some mainDish } }
+    | SelectMeat meat -> { model with SelectedOptions = { model.SelectedOptions with Meat = Some meat } }
+    | SelectSideOrder sideOrder -> 
+        { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }
 
 // VIEW (rendered with React)
-
 open Fulma
 
-let newDraftTile dispatch (title : string) =
-    Tile.tile [ Tile.IsChild; Tile.Size Tile.Is4; Tile.CustomClass "content-card" ]
-        [ Card.card [ ]
-            [ Card.header []
-                [ Card.Header.title [] [ str title ] ]
-              Card.content []
-                [ Content.content [] [ str "Your prestine card draft." ] ]
-              Card.footer []
-                [ Card.Footer.a [ GenericOption.Props [ OnClick (fun _ -> BumpDraft title |> dispatch) ] ]
-                    [ str "Bump" ]
-                  Card.Footer.a [ (* _1_ insert the handler here *) ]
-                    [ str "Reject" ] ] ] ]
+let radioOption (v : string) (name : string) onSelect =
+    Field.div [] [ Control.div [] [ Radio.radio [] [ Radio.input [ Radio.Input.Name name
+                                                                   Radio.Input.Props [ OnChange
+                                                                                           (fun ev -> onSelect ev.Value)
+                                                                                       Value v ] ]
+                                                     str v ] ] ]
 
-let rejectedDraftTile dispatch (title : string) =
-    Tile.tile [ Tile.IsChild; Tile.Size Tile.Is4; Tile.CustomClass "content-card" ]
-        [ Card.card [ ]
-            [ Card.header []
-                [ Card.Header.title [] [ str title ] ]
-              Card.content []
-                [ Content.content [] [ str "Unfortunately this draft has been rejected 🙁" ] ]
-              Card.footer []
-                [ ] ] ]
+let radioOptions (values : string list) (name : string) onSelect =
+    div [] (values |> List.map (fun v -> radioOption v name onSelect))
 
-let bumpedDraftTile dispatch (title : string) (bumps : int) =
-    (*
-        _2_ This function just reuses the tile we create for new drafts.
-        Can you create a similar tile that shows you how many bumps the draft
-        received in its content? Also: give it a link to bump it even more in the footer!
-    *)
-    newDraftTile dispatch title
+let selectionCard (options : string list) (title : string) (id : string) onSelect =
+    Card.card [] [ Card.header [ ] [ Heading.h2 [ Heading.Is5  ] [ str title ] ]
+                   Card.content [] [ (radioOptions options id onSelect) ] ]
 
-let toCard dispatch (draft : Draft) =
-    match draft with
-    | NewDraft title ->
-        newDraftTile dispatch title
-    | BumpedDraft (title, bumps) ->
-        bumpedDraftTile dispatch title bumps
-    | RejectedDraft title ->
-        rejectedDraftTile dispatch title
-
-let toCardRow row =
-    Tile.tile [ Tile.IsParent; Tile.Size Tile.Is12 ] row
-
-let rec chunkByThree soFar l =
-    match l with
-    | x1::x2::[x3] ->
-        [x1; x2; x3]::soFar
-    | x1::x2::x3::xs ->
-        chunkByThree ([x1; x2; x3]::soFar) xs
-    | xs ->
-        xs::soFar
-
-let toCardRows dispatch (titles : Draft list) =
-    titles
-    |> chunkByThree []
-    |> List.rev
-    |> List.map ((List.map (toCard dispatch)) >> toCardRow)
-
-let view (model:Model) dispatch =   
-    div []
-      [ Navbar.navbar [ Navbar.Color IsBlack ]
-            [ Navbar.Brand.div []
-                [ Navbar.Item.a [ Navbar.Item.Props [ Href "#" ] ]
-                    [ str "Card Manager" ] ] ]
-        Container.container [ Container.IsFluid ]
-          [ h1 [ Class "is-size-1 app-title" ] [ str "Manage your Cards" ]
-            Tile.tile [ Tile.IsAncestor; Tile.IsVertical ]
-                [ yield Tile.tile [ Tile.IsParent; Tile.Size Tile.Is12 ]
-                    [ Tile.tile [ Tile.IsChild ]
-                        [ Card.card []
-                            [ Card.header []
-                                [ Card.Header.title [] [ str "Write a draft!" ] ]
-                              Card.content []
-                                [ Input.text [ Input.Placeholder "Your draft"
-                                               Input.Value model.DraftForm
-                                               Input.OnChange (fun ev -> UpdateDraftForm ev.Value |> dispatch)
-                                               Input.Option.Props
-                                                 [ (* _4_ there is a OnKeyUp you can use here
-                                                      the event holds the id of the pressed key
-                                                      you can look up which id corresponds with 'enter'
-                                                    *) ] ] ]
-                              Card.footer []
-                                [ Card.Footer.a [ GenericOption.Props [ OnClick (fun _ -> dispatch CreateDraft) ] ]
-                                    [ str "Submit" ] ] ] ] ]
-                  yield! model.Drafts |> toCardRows dispatch ] ] ]
-
+let view (model : Model) dispatch =
+    div [] 
+        [ Container.container [ Container.IsFluid ] 
+              [ Heading.h1 [ ] [ str "schnitziλ" ]
+                
+                Columns.columns [] 
+                    [ Column.column [] 
+                          [ (selectionCard model.SizeOptions "Select size!" "SizeOptions" 
+                                 (fun v -> SelectSize v |> dispatch)) ]
+                      
+                      Column.column [] 
+                          [ (selectionCard model.MainDishOptions "Select main dish!" "MainDishOptions" 
+                                 (fun v -> SelectMainDish v |> dispatch)) ]
+                      
+                      Column.column [] 
+                          [ (selectionCard model.MeatOptions "Select meat!" "MeatOptions" 
+                                 (fun v -> SelectMeat v |> dispatch)) ]
+                      
+                      Column.column [] 
+                          [ (selectionCard model.SideOrderOptions "Select side order!" "SideOrderOptions" 
+                                 (fun v -> SelectSideOrder v |> dispatch)) ] ] ] ]
+                                 
 #if DEBUG
+
 open Elmish.Debug
 open Elmish.HMR
 #endif
+
 
 // App
 Program.mkSimple init update view
@@ -188,4 +109,5 @@ Program.mkSimple init update view
 // |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
+
 |> Program.run
