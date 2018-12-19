@@ -16,14 +16,20 @@ type MeatOption = string
 
 type SideOrderOption = string
 
-type SchnitziOrder =
+type SelectedOptions =
     { Size : SizeOption option
       MainDish : MainDishOption option
       Meat : MeatOption option
       SideOrder : SideOrderOption option }
 
+type SchnitziOrder =
+    { Size : SizeOption
+      MainDish : MainDishOption
+      Meat : MeatOption
+      SideOrder : SideOrderOption }
+
 type Model =
-    { SelectedOptions : SchnitziOrder
+    { SelectedOptions : SelectedOptions
       SizeOptions : SizeOption list
       MainDishOptions : MainDishOption list
       MeatOptions : MeatOption list
@@ -37,14 +43,14 @@ type Msg =
     | SelectSideOrder of SideOrderOption
     | SubmitOrder
 
-let emptySchnitziOrder =
-          { Size = None
-            MainDish = None
-            Meat = None
-            SideOrder = None }
+let (noOptionsSelected : SelectedOptions) =
+    { Size = None
+      MainDish = None
+      Meat = None
+      SideOrder = None }
 
 let init() : Model =
-    { SelectedOptions = emptySchnitziOrder
+    { SelectedOptions = noOptionsSelected
       SizeOptions = [ "n/a"; "Klein"; "Mittel"; "Groß"; "XL" ]
       MainDishOptions = [ "n/a"; "Schnitzel"; "Gemüsetaler"; "Gebackener Emmentaler" ]
       MeatOptions = [ "n/a"; "Pute"; "Schwein" ]
@@ -53,6 +59,12 @@ let init() : Model =
 
 
 // UPDATE
+let makeSchnitziOrder (selectedOptions : SelectedOptions) =
+    match selectedOptions with
+    | {Size = Some s; MainDish = Some md; Meat = Some m; SideOrder = Some so} ->
+        Some {Size = s; MainDish = md; Meat = m; SideOrder = so}
+    | _ -> None
+
 let update (msg : Msg) (model : Model) =
     match msg with
     | SelectSize size -> { model with SelectedOptions = { model.SelectedOptions with Size = Some size } }
@@ -61,16 +73,14 @@ let update (msg : Msg) (model : Model) =
     | SelectMeat meat -> { model with SelectedOptions = { model.SelectedOptions with Meat = Some meat } }
     | SelectSideOrder sideOrder ->
         { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }
-    | SubmitOrder -> { model with Orders = model.SelectedOptions :: model.Orders; SelectedOptions = emptySchnitziOrder}
+    | SubmitOrder ->
+        match makeSchnitziOrder model.SelectedOptions with
+        | Some order -> { model with Orders = order :: model.Orders; SelectedOptions = noOptionsSelected}
+        | None -> model
 
 
 // VIEW (rendered with React)
 open Fulma
-
-let areAllOptionsSet (order : SchnitziOrder) =
-    match order with
-    | {Size = Some _; MainDish = Some _; Meat = Some _; SideOrder = Some _} -> true
-    | _ -> false
 
 let radioOption (option : string) (name : string) onSelect selected =
     Field.div [] [ Control.div [] [ Radio.radio [] [ Radio.input [ Radio.Input.Name name
@@ -84,13 +94,13 @@ let selectionCard (options : string list) (selectedOption : string option) (titl
     Card.card [] [ Card.header [ ] [ Heading.h2 [ Heading.Is5  ] [ str title ] ]
                    Card.content [] (List.map (fun option -> radioOption option title onSelect (selectedOption = Some option))  options) ]
 
-let orderRow (id : int) (order : SchnitziOrder) =
+let orderRow (index : int) (order : SchnitziOrder) =
     tr []
-      [ td [] [str <| string id ]
-        td [] [str <| Option.defaultValue "" order.Size]
-        td [] [str <| Option.defaultValue "" order.MainDish]
-        td [] [str <| Option.defaultValue "" order.Meat]
-        td [] [str <| Option.defaultValue "" order.SideOrder] ]
+      [ td [] [str (string index) ]
+        td [] [str order.Size]
+        td [] [str order.MainDish]
+        td [] [str order.Meat]
+        td [] [str order.SideOrder] ]
 
 let view (model : Model) dispatch =
     div []
@@ -114,7 +124,7 @@ let view (model : Model) dispatch =
                           [ (selectionCard model.SideOrderOptions model.SelectedOptions.SideOrder "Select side order!" "SideOrderOptions"
                                 (dispatch << SelectSideOrder)) ] ]
 
-                Button.button [ Button.Disabled (not <| areAllOptionsSet model.SelectedOptions)
+                Button.button [ Button.Disabled ((makeSchnitziOrder model.SelectedOptions) = None)
                               ; Button.Props [OnClick (fun _ -> dispatch SubmitOrder) ] ] [str "Submit Order"]
 
                 Table.table []
@@ -126,7 +136,7 @@ let view (model : Model) dispatch =
                               th [] [ str "Meat"]
                               th [] [ str "Side order"] ] ]
                       tbody []
-                        ( List.mapi orderRow (List.rev model.Orders))
+                        ( List.mapi orderRow (List.rev model.Orders) )
                     ]
               ]
         ]
