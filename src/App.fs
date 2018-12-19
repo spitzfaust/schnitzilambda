@@ -50,10 +50,10 @@ let init() : Model =
 let update (msg : Msg) (model : Model) =
     match msg with
     | SelectSize size -> { model with SelectedOptions = { model.SelectedOptions with Size = Some size } }
-    | SelectMainDish mainDish -> 
+    | SelectMainDish mainDish ->
         { model with SelectedOptions = { model.SelectedOptions with MainDish = Some mainDish } }
     | SelectMeat meat -> { model with SelectedOptions = { model.SelectedOptions with Meat = Some meat } }
-    | SelectSideOrder sideOrder -> 
+    | SelectSideOrder sideOrder ->
         { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }
 
 // VIEW (rendered with React)
@@ -64,42 +64,50 @@ let radioOption (v : string) (name : string) onSelect =
                                                                    Radio.Input.Props [ OnChange
                                                                                            (fun ev -> onSelect ev.Value)
                                                                                        Value v ] ]
-                                                     str v ] ] ]
+                                                     str <| sprintf " %s" v ] ] ]
 
 let radioOptions (values : string list) (name : string) onSelect =
     div [] (values |> List.map (fun v -> radioOption v name onSelect))
 
 let selectionCard (options : string list) (title : string) (id : string) onSelect =
-    Card.card [] [ Card.header [ ] [ Heading.h2 [ Heading.Is5  ] [ str title ] ]
-                   Card.content [] [ (radioOptions options id onSelect) ] ]
+    Card.card [ Common.Props [ Style [ Height "100%" ] ] ]
+        [ Card.header [] [ Card.Header.title [] [ str title ] ]
+          Card.content [] [ (radioOptions options id onSelect) ] ]
+
 
 let view (model : Model) dispatch =
-    div [] 
-        [ Container.container [ Container.IsFluid ] 
-              [ Heading.h1 [ ] [ str "schnitziλ" ]
-                
-                Columns.columns [] 
-                    [ Column.column [] 
-                          [ (selectionCard model.SizeOptions "Select size!" "SizeOptions" 
-                                 (fun v -> SelectSize v |> dispatch)) ]
-                      
-                      Column.column [] 
-                          [ (selectionCard model.MainDishOptions "Select main dish!" "MainDishOptions" 
-                                 (fun v -> SelectMainDish v |> dispatch)) ]
-                      
-                      Column.column [] 
-                          [ (selectionCard model.MeatOptions "Select meat!" "MeatOptions" 
-                                 (fun v -> SelectMeat v |> dispatch)) ]
-                      
-                      Column.column [] 
-                          [ (selectionCard model.SideOrderOptions "Select side order!" "SideOrderOptions" 
-                                 (fun v -> SelectSideOrder v |> dispatch)) ] ] ] ]
-                                 
+    Section.section []
+        [ Container.container [ Container.IsWideScreen ]
+
+              [ Heading.h1 [] [ str "schnitziλ" ]
+                Tile.ancestor []
+                    [ Tile.parent []
+                        [ Tile.child []
+                              [ (selectionCard model.SizeOptions "Select size!" "SizeOptions"
+                                     (fun v -> SelectSize v |> dispatch)) ] ]
+
+                      Tile.parent []
+                          [ Tile.child []
+                              [ (selectionCard model.MainDishOptions "Select main dish!" "MainDishOptions"
+                                     (fun v -> SelectMainDish v |> dispatch)) ] ]
+
+                      Tile.parent []
+                          [ Tile.child []
+                              [ (selectionCard model.MeatOptions "Select meat!" "MeatOptions"
+                                     (fun v -> SelectMeat v |> dispatch)) ] ]
+
+                      Tile.parent []
+                          [ Tile.child []
+                              [ (selectionCard model.SideOrderOptions "Select side order!" "SideOrderOptions"
+                                     (fun v -> SelectSideOrder v |> dispatch)) ] ] ] ] ]
+
+
 #if DEBUG
 
 open Elmish.Debug
 open Elmish.HMR
 #endif
+
 
 
 // App
@@ -109,5 +117,7 @@ Program.mkSimple init update view
 // |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
+
+
 
 |> Program.run
