@@ -72,20 +72,17 @@ let areAllOptionsSet (order : SchnitziOrder) =
     | {Size = Some _; MainDish = Some _; Meat = Some _; SideOrder = Some _} -> true
     | _ -> false
 
-let radioOption (option : string) (name : string) onSelect selectedOption =
+let radioOption (option : string) (name : string) onSelect selected =
     Field.div [] [ Control.div [] [ Radio.radio [] [ Radio.input [ Radio.Input.Name name
                                                                    Radio.Input.Props [ OnChange
                                                                                            (fun ev -> onSelect ev.Value)
                                                                                        Value option
-                                                                                       selectedOption
-                                                                                       |> Option.map (fun key -> key = option)
-                                                                                       |> Option.defaultValue false
-                                                                                       |> Checked ] ]
+                                                                                       Checked selected ] ]
                                                      str option ] ] ]
 
 let selectionCard (options : string list) (selectedOption : string option) (title : string) (id : string) onSelect =
     Card.card [] [ Card.header [ ] [ Heading.h2 [ Heading.Is5  ] [ str title ] ]
-                   Card.content [] (List.map (fun option -> radioOption option title onSelect selectedOption) options) ]
+                   Card.content [] (List.map (fun option -> radioOption option title onSelect (selectedOption = Some option))  options) ]
 
 let orderRow (id : int) (order : SchnitziOrder) =
     tr []
