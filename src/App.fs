@@ -16,37 +16,55 @@ type MeatOption = string
 
 type SideOrderOption = string
 
-type SchnitziOrder =
+type SelectedOptions =
     { Size : SizeOption option
       MainDish : MainDishOption option
       Meat : MeatOption option
       SideOrder : SideOrderOption option }
 
+type SchnitziOrder =
+    { Size : SizeOption
+      MainDish : MainDishOption
+      Meat : MeatOption
+      SideOrder : SideOrderOption }
+
 type Model =
-    { SelectedOptions : SchnitziOrder
+    { SelectedOptions : SelectedOptions
       SizeOptions : SizeOption list
       MainDishOptions : MainDishOption list
       MeatOptions : MeatOption list
-      SideOrderOptions : SideOrderOption list }
+      SideOrderOptions : SideOrderOption list
+      Orders : SchnitziOrder list }
 
 type Msg =
     | SelectSize of SizeOption
     | SelectMainDish of MainDishOption
     | SelectMeat of MeatOption
     | SelectSideOrder of SideOrderOption
+    | SubmitOrder
+
+let (noOptionsSelected : SelectedOptions) =
+    { Size = None
+      MainDish = None
+      Meat = None
+      SideOrder = None }
 
 let init() : Model =
-    { SelectedOptions =
-          { Size = None
-            MainDish = None
-            Meat = None
-            SideOrder = None }
+    { SelectedOptions = noOptionsSelected
       SizeOptions = [ "n/a"; "Klein"; "Mittel"; "Groß"; "XL" ]
       MainDishOptions = [ "n/a"; "Schnitzel"; "Gemüsetaler"; "Gebackener Emmentaler" ]
       MeatOptions = [ "n/a"; "Pute"; "Schwein" ]
-      SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges" ] }
+      SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges" ]
+      Orders = [] }
+
 
 // UPDATE
+let makeSchnitziOrder (selectedOptions : SelectedOptions) =
+    match selectedOptions with
+    | { Size = Some s; MainDish = Some md; Meat = Some m; SideOrder = Some so } ->
+        Some { Size = s; MainDish = md; Meat = m; SideOrder = so }
+    | _ -> None
+
 let update (msg : Msg) (model : Model) =
     match msg with
     | SelectSize size -> { model with SelectedOptions = { model.SelectedOptions with Size = Some size } }
@@ -55,53 +73,72 @@ let update (msg : Msg) (model : Model) =
     | SelectMeat meat -> { model with SelectedOptions = { model.SelectedOptions with Meat = Some meat } }
     | SelectSideOrder sideOrder ->
         { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }
+    | SubmitOrder ->
+        match makeSchnitziOrder model.SelectedOptions with
+        | Some order -> { model with Orders = order :: model.Orders; SelectedOptions = noOptionsSelected }
+        | None -> model
+
 
 // VIEW (rendered with React)
 open Fulma
 
-let radioOption (v : string) (name : string) onSelect =
+let radioOption (option : string) (name : string) onSelect selected =
     Field.div [] [ Control.div [] [ Radio.radio [] [ Radio.input [ Radio.Input.Name name
                                                                    Radio.Input.Props [ OnChange
                                                                                            (fun ev -> onSelect ev.Value)
-                                                                                       Value v ] ]
-                                                     str <| sprintf " %s" v ] ] ]
+                                                                                       Value option
+                                                                                       Checked selected ] ]
+                                                     (str <| sprintf " %s" option) ] ] ]
 
-let radioOptions (values : string list) (name : string) onSelect =
-    div [] (values |> List.map (fun v -> radioOption v name onSelect))
-
-let selectionCard (options : string list) (title : string) (id : string) onSelect =
-    Card.card [ Common.Props [ Style [ Height "100%" ] ] ]
+let selectionCard (options : string list) (selectedOption : string option) (title : string) (id : string) onSelect =
+    Card.card [ GenericOption.Props [ Style [ Height "100%" ] ] ]
         [ Card.header [] [ Card.Header.title [] [ str title ] ]
-          Card.content [] [ (radioOptions options id onSelect) ] ]
+          Card.content [] (List.map (fun option -> radioOption option title onSelect (selectedOption = Some option)) options) ]
 
+let orderRow (index : int) (order : SchnitziOrder) =
+    tr []
+      [ td [] [ str (string index) ]
+        td [] [ str order.Size ]
+        td [] [ str order.MainDish ]
+        td [] [ str order.Meat ]
+        td [] [ str order.SideOrder ] ]
 
 let view (model : Model) dispatch =
     Section.section []
         [ Container.container [ Container.IsWideScreen ]
+            [ Heading.h1 [] [ str "schnitziλ" ]
+              Columns.columns [ Columns.IsMultiline ]
+                    [ Column.column []
+                          [ (selectionCard model.SizeOptions model.SelectedOptions.Size "Select size!" "SizeOptions"
+                            (dispatch << SelectSize)) ]
+                      Column.column []
+                          [ (selectionCard model.MainDishOptions model.SelectedOptions.MainDish "Select main dish!" "MainDishOptions"
+                            (dispatch << SelectMainDish)) ]
 
-              [ Heading.h1 [] [ str "schnitziλ" ]
-                Tile.ancestor []
-                    [ Tile.parent []
-                        [ Tile.child []
-                              [ (selectionCard model.SizeOptions "Select size!" "SizeOptions"
-                                     (fun v -> SelectSize v |> dispatch)) ] ]
+                      Column.column []
+                          [ (selectionCard model.MeatOptions model.SelectedOptions.Meat "Select meat!" "MeatOptions"
+                            (dispatch << SelectMeat)) ]
 
-                      Tile.parent []
-                          [ Tile.child []
-                              [ (selectionCard model.MainDishOptions "Select main dish!" "MainDishOptions"
-                                     (fun v -> SelectMainDish v |> dispatch)) ] ]
-
-                      Tile.parent []
-                          [ Tile.child []
-                              [ (selectionCard model.MeatOptions "Select meat!" "MeatOptions"
-                                     (fun v -> SelectMeat v |> dispatch)) ] ]
-
-                      Tile.parent []
-                          [ Tile.child []
-                              [ (selectionCard model.SideOrderOptions "Select side order!" "SideOrderOptions"
-                                     (fun v -> SelectSideOrder v |> dispatch)) ] ] ] ] ]
-
-
+                      Column.column []
+                          [ (selectionCard model.SideOrderOptions model.SelectedOptions.SideOrder "Select side order!" "SideOrderOptions"
+                            (dispatch << SelectSideOrder)) ]
+                      Column.column [ Column.Width(Screen.All, Column.IsFull);
+                                      Column.Modifiers [ Modifier.TextAlignment(Screen.All, TextAlignment.Centered) ] ]
+                          [ Button.button
+                              [ Button.Disabled((makeSchnitziOrder model.SelectedOptions) = None)
+                                Button.Props [ OnClick(fun _ -> dispatch SubmitOrder) ] ] [ str "Submit Order" ] ]
+                      Column.column [ Column.Width(Screen.All, Column.IsFull);
+                                      Column.Modifiers [ Modifier.TextAlignment(Screen.All, TextAlignment.Centered) ] ]
+                          [ Table.table [ Table.Props [ Style [ Margin "0 auto"; Width "100%" ] ] ]
+                              [ thead []
+                                  [ tr []
+                                      [ th [] [ str "Position" ]
+                                        th [] [ str "Size" ]
+                                        th [] [ str "Main dish" ]
+                                        th [] [ str "Meat" ]
+                                        th [] [ str "Side order" ] ] ]
+                                tbody []
+                                    (List.mapi orderRow (List.rev model.Orders)) ] ] ] ] ]
 #if DEBUG
 
 open Elmish.Debug
@@ -117,7 +154,6 @@ Program.mkSimple init update view
 // |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
-
 
 
 |> Program.run
