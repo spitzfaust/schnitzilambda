@@ -1,4 +1,4 @@
-
+module App
 
 open Elmish
 open Elmish.React
@@ -125,7 +125,7 @@ let view (model : Model) dispatch =
                                 (dispatch << SelectSideOrder)) ] ]
 
                 Button.button [ Button.Disabled((makeSchnitziOrder model.SelectedOptions) = None)
-                             ; Button.Props [ OnClick(fun _ -> dispatch SubmitOrder) ] ] [ str "Submit Order" ]
+                        ; Button.Props [ OnClick(fun _ -> dispatch SubmitOrder) ] ] [ str "Submit Order" ]
 
                 Table.table []
                     [ thead []
@@ -149,8 +149,6 @@ open Elmish.Debug
 open Elmish.HMR
 #endif
 
-
-
 // App
 Program.mkSimple init update view
 |> Program.withReactUnoptimized "elmish-app"
@@ -158,6 +156,4 @@ Program.mkSimple init update view
 // |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
-
-
 |> Program.run
