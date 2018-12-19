@@ -1,4 +1,4 @@
-module App
+
 
 open Elmish
 open Elmish.React
@@ -55,14 +55,14 @@ let init() : Model =
       MainDishOptions = [ "n/a"; "Schnitzel"; "Gemüsetaler"; "Gebackener Emmentaler" ]
       MeatOptions = [ "n/a"; "Pute"; "Schwein" ]
       SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges" ]
-      Orders = []}
+      Orders = [] }
 
 
 // UPDATE
 let makeSchnitziOrder (selectedOptions : SelectedOptions) =
     match selectedOptions with
-    | {Size = Some s; MainDish = Some md; Meat = Some m; SideOrder = Some so} ->
-        Some {Size = s; MainDish = md; Meat = m; SideOrder = so}
+    | { Size = Some s; MainDish = Some md; Meat = Some m; SideOrder = Some so } ->
+        Some { Size = s; MainDish = md; Meat = m; SideOrder = so }
     | _ -> None
 
 let update (msg : Msg) (model : Model) =
@@ -75,7 +75,7 @@ let update (msg : Msg) (model : Model) =
         { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }
     | SubmitOrder ->
         match makeSchnitziOrder model.SelectedOptions with
-        | Some order -> { model with Orders = order :: model.Orders; SelectedOptions = noOptionsSelected}
+        | Some order -> { model with Orders = order :: model.Orders; SelectedOptions = noOptionsSelected }
         | None -> model
 
 
@@ -91,21 +91,21 @@ let radioOption (option : string) (name : string) onSelect selected =
                                                      str option ] ] ]
 
 let selectionCard (options : string list) (selectedOption : string option) (title : string) (id : string) onSelect =
-    Card.card [] [ Card.header [ ] [ Heading.h2 [ Heading.Is5  ] [ str title ] ]
-                   Card.content [] (List.map (fun option -> radioOption option title onSelect (selectedOption = Some option))  options) ]
+    Card.card [] [ Card.header [] [ Heading.h2 [ Heading.Is5 ] [ str title ] ]
+                   Card.content [] (List.map (fun option -> radioOption option title onSelect (selectedOption = Some option)) options) ]
 
 let orderRow (index : int) (order : SchnitziOrder) =
     tr []
-      [ td [] [str (string index) ]
-        td [] [str order.Size]
-        td [] [str order.MainDish]
-        td [] [str order.Meat]
-        td [] [str order.SideOrder] ]
+      [ td [] [ str (string index) ]
+        td [] [ str order.Size ]
+        td [] [ str order.MainDish ]
+        td [] [ str order.Meat ]
+        td [] [ str order.SideOrder ] ]
 
 let view (model : Model) dispatch =
     div []
         [ Container.container [ Container.IsFluid ]
-              [ Heading.h1 [ ] [ str "schnitziλ" ]
+              [ Heading.h1 [] [ str "schnitziλ" ]
 
                 Columns.columns []
                     [ Column.column []
@@ -124,19 +124,19 @@ let view (model : Model) dispatch =
                           [ (selectionCard model.SideOrderOptions model.SelectedOptions.SideOrder "Select side order!" "SideOrderOptions"
                                 (dispatch << SelectSideOrder)) ] ]
 
-                Button.button [ Button.Disabled ((makeSchnitziOrder model.SelectedOptions) = None)
-                              ; Button.Props [OnClick (fun _ -> dispatch SubmitOrder) ] ] [str "Submit Order"]
+                Button.button [ Button.Disabled((makeSchnitziOrder model.SelectedOptions) = None)
+                             ; Button.Props [ OnClick(fun _ -> dispatch SubmitOrder) ] ] [ str "Submit Order" ]
 
                 Table.table []
                     [ thead []
                         [ tr []
-                            [ th [] [ str "Position"]
-                              th [] [ str "Size"]
-                              th [] [ str "Main dish"]
-                              th [] [ str "Meat"]
-                              th [] [ str "Side order"] ] ]
+                            [ th [] [ str "Position" ]
+                              th [] [ str "Size" ]
+                              th [] [ str "Main dish" ]
+                              th [] [ str "Meat" ]
+                              th [] [ str "Side order" ] ] ]
                       tbody []
-                        ( List.mapi orderRow (List.rev model.Orders) )
+                        (List.mapi orderRow (List.rev model.Orders))
                     ]
               ]
         ]
@@ -150,6 +150,7 @@ open Elmish.HMR
 #endif
 
 
+
 // App
 Program.mkSimple init update view
 |> Program.withReactUnoptimized "elmish-app"
@@ -157,5 +158,6 @@ Program.mkSimple init update view
 // |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
+
 
 |> Program.run
