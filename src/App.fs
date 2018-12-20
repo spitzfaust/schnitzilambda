@@ -4,6 +4,7 @@ open Elmish
 open Elmish.React
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
+open Fable.Import
 
 module Browser = Fable.Import.Browser
 
@@ -15,6 +16,8 @@ type MainDishOption = string
 type MeatOption = string
 
 type SideOrderOption = string
+
+type Color = string
 
 type SelectedOptions =
     { Size : SizeOption option
@@ -42,6 +45,7 @@ type Msg =
     | SelectMeat of MeatOption
     | SelectSideOrder of SideOrderOption
     | SubmitOrder
+    | RecalculateBackgroundColor
 
 let (noOptionsSelected : SelectedOptions) =
     { Size = None
@@ -49,13 +53,13 @@ let (noOptionsSelected : SelectedOptions) =
       Meat = None
       SideOrder = None }
 
-let init() : Model =
+let init() =
     { SelectedOptions = noOptionsSelected
       SizeOptions = [ "n/a"; "Klein"; "Mittel"; "Groß"; "XL" ]
       MainDishOptions = [ "n/a"; "Schnitzel"; "Gemüsetaler"; "Gebackener Emmentaler" ]
       MeatOptions = [ "n/a"; "Pute"; "Schwein" ]
       SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges" ]
-      Orders = [] }
+      Orders = [] }, Cmd.ofMsg RecalculateBackgroundColor
 
 
 // UPDATE
@@ -65,18 +69,33 @@ let makeSchnitziOrder (selectedOptions : SelectedOptions) =
         Some { Size = s; MainDish = md; Meat = m; SideOrder = so }
     | _ -> None
 
+let concatOptions (x : SelectedOptions) =
+  [ x.Size; x.Meat; x.MainDish; x.SideOrder ]
+    |> List.choose id
+    |> String.concat ""
+
+
+let setBackgroundColorFromOptions (options : SelectedOptions) =
+    let color = StringToColor.stringToColor <| concatOptions options
+    let html = Browser.document.querySelector "html"
+    html.setAttribute ("style", (sprintf "background-color: #%s;" color))
+
 let update (msg : Msg) (model : Model) =
     match msg with
-    | SelectSize size -> { model with SelectedOptions = { model.SelectedOptions with Size = Some size } }
+    | SelectSize size ->
+        { model with SelectedOptions = { model.SelectedOptions with Size = Some size } }, Cmd.ofMsg RecalculateBackgroundColor
     | SelectMainDish mainDish ->
-        { model with SelectedOptions = { model.SelectedOptions with MainDish = Some mainDish } }
-    | SelectMeat meat -> { model with SelectedOptions = { model.SelectedOptions with Meat = Some meat } }
+        { model with SelectedOptions = { model.SelectedOptions with MainDish = Some mainDish } }, Cmd.ofMsg RecalculateBackgroundColor
+    | SelectMeat meat -> { model with SelectedOptions = { model.SelectedOptions with Meat = Some meat } }, Cmd.ofMsg RecalculateBackgroundColor
     | SelectSideOrder sideOrder ->
-        { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }
+        { model with SelectedOptions = { model.SelectedOptions with SideOrder = Some sideOrder } }, Cmd.ofMsg RecalculateBackgroundColor
     | SubmitOrder ->
         match makeSchnitziOrder model.SelectedOptions with
-        | Some order -> { model with Orders = order :: model.Orders; SelectedOptions = noOptionsSelected }
-        | None -> model
+        | Some order -> { model with Orders = order :: model.Orders; SelectedOptions = noOptionsSelected }, Cmd.ofMsg RecalculateBackgroundColor
+        | None -> model, Cmd.none
+    | RecalculateBackgroundColor ->
+        setBackgroundColorFromOptions model.SelectedOptions
+        model, Cmd.none
 
 
 // VIEW (rendered with React)
@@ -87,8 +106,9 @@ let radioOption (option : string) (name : string) onSelect selected =
                                                                    Radio.Input.Props [ OnChange
                                                                                            (fun ev -> onSelect ev.Value)
                                                                                        Value option
-                                                                                       Checked selected ] ]
-                                                     (str <| sprintf " %s" option) ] ] ]
+                                                                                       Checked selected
+                                                                                       Style [ MarginRight ".5em" ] ] ]
+                                                     str option ] ] ]
 
 let selectionCard (options : string list) (selectedOption : string option) (title : string) (id : string) onSelect =
     Card.card [ GenericOption.Props [ Style [ Height "100%" ] ] ]
@@ -104,9 +124,9 @@ let orderRow (index : int) (order : SchnitziOrder) =
         td [] [ str order.SideOrder ] ]
 
 let view (model : Model) dispatch =
-    Section.section []
+    Section.section [ Section.Props [ Style [ Height "100%" ] ] ]
         [ Container.container [ Container.IsWideScreen ]
-            [ Heading.h1 [] [ str "schnitziλ" ]
+            [ Heading.h1 [  Heading.CustomClass "schnitzi__title" ] [ str "schnitziλ" ]
               Columns.columns [ Columns.IsMultiline ]
                     [ Column.column []
                           [ (selectionCard model.SizeOptions model.SelectedOptions.Size "Select size!" "SizeOptions"
@@ -146,14 +166,14 @@ open Elmish.HMR
 #endif
 
 
-
 // App
-Program.mkSimple init update view
+Program.mkProgram init update view
 |> Program.withReactUnoptimized "elmish-app"
 #if DEBUG
 // |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
+
 
 
 |> Program.run

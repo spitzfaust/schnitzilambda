@@ -7,13 +7,20 @@
       <e p=".git/info/exclude" t="IncludeRecursive" />
       <e p="Schnitzilambda.sln" t="IncludeFlat" />
       <e p="packages" t="ExcludeRecursive" />
-      <e p="public" t="ExcludeRecursive" />
+      <e p="public" t="ExcludeRecursive">
+        <e p="favicon.ico" t="Include" />
+        <e p="img/schnitzi.png" t="Include" />
+        <e p="index.html" t="Include" />
+      </e>
       <e p="src" t="IncludeRecursive">
         <e p="App.fs" t="Include" />
         <e p="App.fsproj" t="IncludeRecursive" />
-        <e p="Fulma" t="Include" />
+        <e p="StringToColor.fs" t="Include" />
         <e p="bin" t="ExcludeRecursive" />
         <e p="obj" t="ExcludeRecursive" />
+        <e p="scss" t="Include">
+          <e p="main.scss" t="Include" />
+        </e>
       </e>
     </e>
   </component>
