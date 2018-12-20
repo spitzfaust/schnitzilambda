@@ -55,10 +55,10 @@ let (noOptionsSelected : SelectedOptions) =
 
 let init() =
     { SelectedOptions = noOptionsSelected
-      SizeOptions = [ "n/a"; "Klein"; "Mittel"; "Groß"; "XL" ]
-      MainDishOptions = [ "n/a"; "Schnitzel"; "Gemüsetaler"; "Gebackener Emmentaler" ]
-      MeatOptions = [ "n/a"; "Pute"; "Schwein" ]
-      SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges" ]
+      SizeOptions = [ "n/a"; "Klein"; "Mittel"; "XL" ]
+      MainDishOptions = [ "n/a"; "Schwein"; "Pute"; "Sur"; "Huhn"; "Gemüsetaler"; "Gebackener Emmentaler"; "Gebackener Polardorsch"; "Broccoli-Cheese Nuggets"; "Steirisches Backhendl auf Kartoffel-Vogerlsalat"; "Hühnerfiletstreifen"; "Hühner-Nuggets"; "Cevapcici mit Zwiebelsenf" ]
+      MeatOptions = [ "n/a"; "Schnitzel"; "Cordon Bleu"; "Bauern Cordon Bleu"; "Puszta Cordon Bleu"; "Hawaii Cordon Bleu"; "Pariser" ]
+      SideOrderOptions = [ "n/a"; "Kartoffelsalat"; "Gurkensalat"; "Pommes"; "Gemischter Salat"; "Wedges"; "Krautsalat"; "Petersilkartoffel" ]
       Orders = [] }, Cmd.ofMsg RecalculateBackgroundColor
 
 
