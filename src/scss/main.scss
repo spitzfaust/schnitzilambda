@@ -1,5 +1,21 @@
 @import "./../../node_modules/bulma/bulma.sass";
 
-.app-title {
-    margin-bottom: 12px;
+html {
+    background-color: #ffffff;
+    background-image: url("/img/schnitzi.png");
+    transition: background-color .2s ease-in;
+}
+
+.schnitzi {
+    &__title {
+        -webkit-text-stroke: 1px black;
+        color: white;
+        text-shadow:
+                3px 3px 0 #000,
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
+        padding: .5em;
+    }
 }
